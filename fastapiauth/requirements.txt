@@ -1,0 +1,6 @@
+fastapi
+hypercorn
+tortoise-orm
+bcrypt
+pyjwt
+python-multipart
