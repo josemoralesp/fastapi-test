@@ -1,11 +1,7 @@
 fastapi
-hypercorn
 uvicorn
 tortoise-orm
 bcrypt
 pyjwt
 python-multipart
-graphene
-cython
-setuptools
-git+https://github.com/benandfrank/graphql-core-legacy.git@master
+strawberry-graphql[fastapi]

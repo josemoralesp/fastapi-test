@@ -1,15 +1,19 @@
 # pylint: disable=missing-final-newline
+import typing
 from typing import Awaitable
 from types import ClassMethodDescriptorType
 from datetime import datetime, timedelta
+import strawberry
+from strawberry.types import Info
 from fastapi import FastAPI
 from fastapi.security import OAuth2PasswordBearer
+from strawberry.fastapi import GraphQLRouter
+from starlette.requests import Request
+from starlette.websockets import WebSocket
+from strawberry.permission import BasePermission
 from tortoise.contrib.fastapi import register_tortoise
 from tortoise.contrib.pydantic import pydantic_model_creator, pydantic_queryset_creator
-from graphene import ObjectType, List, String, Schema, Mutation, Field
-from graphql.execution.executors.asyncio import AsyncioExecutor
-from starlette.graphql import GraphQLApp
-from schemas import UserSchema
+from schemas import UserSchema, UserInputSchema
 from models import User
 from passlib.hash import bcrypt
 import json
@@ -27,47 +31,53 @@ UserIn_Pydantic = pydantic_model_creator(User,
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl='token')
 
+class IsAuthenticated(BasePermission):
+    message = "User is not authenticated"
 
-class Query(ObjectType):
+    def has_permission(self, source: typing.Any, info: Info, **kwargs) -> bool:
+        request: typing.Union[Request, WebSocket] = info.context["request"]
 
-    user_list = None
-    get_users = List(UserSchema)
-    hello = String(name=String(default_value="World"))
+        print(request.headers)
+        print(request.query_params)
+        if "Authorization" in request.headers:
+            pass
+            # return authenticate_header(request)
 
-    def resolve_hello(self, info, name):
-        return 'Hello ' + name
+        if "auth" in request.query_params:
+            pass
+            # return authenticate_query_params(request)
 
-    async def resolve_get_users(self, info):
+        return True
+
+@strawberry.type
+class Query:
+
+    @strawberry.field
+    def hello(self) -> str:
+        return 'Hello World'
+
+    @strawberry.field(permission_classes=[IsAuthenticated])
+    async def get_users(self, info: Info) -> typing.List[UserSchema]:
         users = await User_Pydantic_List.from_queryset(User.all())
-        return json.loads(users.json())
+        return [User(**i) for i in json.loads(users.json())]
 
+@strawberry.type
+class Mutation:
 
-class CreateUser(Mutation):
-
-    user = Field(UserSchema)
-
-    class Arguments:
-        username = String(required=True)
-        password_hash = String(required=True)
-
-    async def mutate(self, info, username, password_hash):
-        user_obj = User(username=username,
-                        password_hash=bcrypt.hash(password_hash))
+    @strawberry.field
+    async def create_user(self, user: UserInputSchema) -> UserSchema:
+        user_obj = User(username=user.username,
+                        password_hash=bcrypt.hash(user.password_hash))
         await user_obj.save()
         new_user = await User_Pydantic.from_tortoise_orm(user_obj)
-        return CreateUser(user=new_user)
+        return UserSchema(**new_user.dict())
 
 
-class Mutation(ObjectType):
-    create_user = CreateUser.Field()
-
-
-app.add_route("/", GraphQLApp(
-    schema=Schema(query=Query, mutation=Mutation),
-    executor_class=AsyncioExecutor,
-    # dependencies=Depends(oauth2_scheme)
-    )
+schema = strawberry.Schema(Query, Mutation)
+graphql_app = GraphQLRouter(
+  schema
 )
+app.include_router(graphql_app, prefix="/graphql")
 
 
 register_tortoise(
@@ -77,4 +87,3 @@ register_tortoise(
     generate_schemas=True,
     add_exception_handlers=True,
 )
-
