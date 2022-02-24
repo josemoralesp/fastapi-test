@@ -10,7 +10,7 @@ from starlette.websockets import WebSocket
 from strawberry.permission import BasePermission
 from tortoise.contrib.fastapi import register_tortoise
 from tortoise.contrib.pydantic import pydantic_model_creator, pydantic_queryset_creator
-import odoo_env
+from odoo_env import odoo_env
 from schemas import UserSchema, UserInputSchema
 from models import User
 from passlib.hash import bcrypt
@@ -33,8 +33,6 @@ class IsAuthenticated(BasePermission):
     def has_permission(self, source: typing.Any, info: Info, **kwargs) -> bool:
         request: typing.Union[Request, WebSocket] = info.context["request"]
 
-        print(request.headers)
-        print(request.query_params)
         if "Authorization" in request.headers:
             pass
             # return authenticate_header(request)
@@ -48,14 +46,13 @@ class IsAuthenticated(BasePermission):
 @strawberry.type
 class Query:
 
+    # @strawberry.field(permission_classes=[IsAuthenticated])
     @strawberry.field
-    def hello(self) -> str:
-        return 'Hello World'
-
-    @strawberry.field(permission_classes=[IsAuthenticated])
     async def get_users(self, info: Info) -> typing.List[UserSchema]:
-        conn = odoo_env.odoo_env()
-        partners = conn.execute('res.partner', 'search_read', [], ['name', 'email', 'phone'], 0, 100)
+        execute = odoo_env()
+        partners = execute('res.partner',
+                           'search_read',
+                           [], ['name', 'email', 'phone'], 0, 100)
         # users = await User_Pydantic_List.from_queryset(User.all())
         return [User(**i) for i in partners]
 
