@@ -1,8 +1,5 @@
 # pylint: disable=missing-final-newline
 import typing
-from typing import Awaitable
-from types import ClassMethodDescriptorType
-from datetime import datetime, timedelta
 import strawberry
 from strawberry.types import Info
 from fastapi import FastAPI
@@ -13,10 +10,7 @@ from starlette.websockets import WebSocket
 from strawberry.permission import BasePermission
 from tortoise.contrib.fastapi import register_tortoise
 from tortoise.contrib.pydantic import pydantic_model_creator, pydantic_queryset_creator
-<<<<<<< HEAD
-=======
 import odoo_env
->>>>>>> e2fb4ca ([IMP] Now using odoorpc)
 from schemas import UserSchema, UserInputSchema
 from models import User
 from passlib.hash import bcrypt
@@ -24,8 +18,6 @@ import json
 
 
 app = FastAPI()
-
-JWT_SECRET = 'myjwtsecret'
 
 User_Pydantic_List = pydantic_queryset_creator(User)
 User_Pydantic = pydantic_model_creator(User, name='User')
@@ -63,7 +55,7 @@ class Query:
     @strawberry.field(permission_classes=[IsAuthenticated])
     async def get_users(self, info: Info) -> typing.List[UserSchema]:
         conn = odoo_env.odoo_env()
-        partners = conn.execute('res.partner', 'search_read', [], ['name', 'email', 'mysql_id'], 0, 100)
+        partners = conn.execute('res.partner', 'search_read', [], ['name', 'email', 'phone'], 0, 100)
         # users = await User_Pydantic_List.from_queryset(User.all())
         return [User(**i) for i in partners]
 

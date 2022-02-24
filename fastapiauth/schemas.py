@@ -5,12 +5,16 @@ import strawberry
 class UserSchema:
 
     id: strawberry.ID
-    username: str
+    name: str
+    email: str
+    phone: str
     password_hash: str
 
 
 @strawberry.input
 class UserInputSchema:
 
-    username: str = strawberry.field(description="The new of the new user")
+    name: str = strawberry.field(description="The new user name")
+    email: str = strawberry.field(description="The new user email")
+    phone: str = strawberry.field(description="The new user phone")
     password_hash: str = strawberry.field(description="The password to be encrypted")

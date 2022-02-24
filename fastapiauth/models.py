@@ -8,7 +8,9 @@ import asyncio
 class User(Model):
 
     id = fields.IntField(pk=True)
-    username = fields.CharField(50, unique=True)
+    name = fields.CharField(50, unique=True)
+    phone = fields.CharField(50, unique=True)
+    email = fields.CharField(50, unique=True)
     password_hash = fields.CharField(128)
 
     @classmethod
